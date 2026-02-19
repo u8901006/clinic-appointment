@@ -8,4 +8,5 @@ const config = {
 export const lineClient = new messagingApi.MessagingApiClient({
   channelAccessToken: config.channelAccessToken
 })
+
 export const lineMiddleware = middleware(config)

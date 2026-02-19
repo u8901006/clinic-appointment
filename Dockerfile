@@ -15,8 +15,8 @@ COPY apps/web/package*.json ./apps/web/
 # Copy prisma schema
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (force fresh install)
+RUN npm ci --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
