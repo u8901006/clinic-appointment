@@ -1,6 +1,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 # Copy root package files
 COPY package*.json ./
 COPY turbo.json ./
@@ -27,6 +30,9 @@ RUN cd apps/server && npx tsc
 # Production image
 FROM node:20-alpine
 WORKDIR /app
+
+# Install OpenSSL for Prisma runtime
+RUN apk add --no-cache openssl libc6-compat
 
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules

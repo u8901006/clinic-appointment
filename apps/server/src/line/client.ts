@@ -5,5 +5,7 @@ const config = {
   channelSecret: process.env.LINE_CHANNEL_SECRET!
 }
 
-export const lineClient = new line.messagingApi.MessagingApiClient(config.channelAccessToken)
+export const lineClient = new line.messagingApi.MessagingApiClient({
+  channelAccessToken: config.channelAccessToken
+})
 export const lineMiddleware = line.middleware(config)
