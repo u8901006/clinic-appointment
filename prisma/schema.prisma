@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Doctor {
+  id        String     @id @default(uuid())
+  name      String
+  specialty String
+  schedule  Json?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  slots     TimeSlot[]
+  queues    Queue[]
+}
+
+model TimeSlot {
+  id           String       @id @default(uuid())
+  doctorId     String
+  doctor       Doctor       @relation(fields: [doctorId], references: [id])
+  date         DateTime
+  startTime    String
+  endTime      String
+  maxPatients  Int          @default(20)
+  currentCount Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  appointments Appointment[]
+
+  @@index([doctorId, date])
+}
+
+model Patient {
+  id           String       @id @default(uuid())
+  lineUserId   String       @unique
+  name         String
+  phone        String
+  birthDate    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String
+  patient     Patient           @relation(fields: [patientId], references: [id])
+  timeSlotId  String
+  timeSlot    TimeSlot          @relation(fields: [timeSlotId], references: [id])
+  queueNumber Int
+  status      AppointmentStatus @default(BOOKED)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([timeSlotId])
+  @@index([patientId])
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+}
+
+model Queue {
+  id            String   @id @default(uuid())
+  doctorId      String
+  doctor        Doctor   @relation(fields: [doctorId], references: [id])
+  date          DateTime
+  currentNumber Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([doctorId, date])
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
