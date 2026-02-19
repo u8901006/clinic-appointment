@@ -5,8 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY turbo.json ./
 
-# Copy server package files
+# Copy all workspace package files
 COPY apps/server/package*.json ./apps/server/
+COPY apps/web/package*.json ./apps/web/
 
 # Copy prisma schema
 COPY prisma ./prisma/
@@ -20,8 +21,8 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build
-RUN npm run build
+# Build server only
+RUN cd apps/server && npx tsc
 
 # Production image
 FROM node:20-alpine
@@ -31,8 +32,7 @@ COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/apps/server/package.json ./apps/server/
 
 EXPOSE 3000
 
-CMD ["node", "dist/apps/server/src/index.js"]
+CMD ["node", "dist/index.js"]
