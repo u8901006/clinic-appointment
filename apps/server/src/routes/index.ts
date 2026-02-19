@@ -7,6 +7,7 @@ import appointmentsRouter from './appointments'
 import queueRouter from './queue'
 import reportsRouter from './reports'
 import authRouter from './auth'
+import lineRouter from './line'
 
 const router = Router()
 
@@ -18,5 +19,6 @@ router.use('/appointments', appointmentsRouter)
 router.use('/queue', queueRouter)
 router.use('/reports', reportsRouter)
 router.use('/auth', authRouter)
+router.use('/line', lineRouter)
 
 export default router
