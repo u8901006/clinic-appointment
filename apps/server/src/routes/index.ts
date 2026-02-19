@@ -7,7 +7,10 @@ import appointmentsRouter from './appointments'
 import queueRouter from './queue'
 import reportsRouter from './reports'
 import authRouter from './auth'
-import lineRouter from './line'
+
+function hasLineBotConfig() {
+  return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN && process.env.LINE_CHANNEL_SECRET)
+}
 
 const router = Router()
 
@@ -19,6 +22,12 @@ router.use('/appointments', appointmentsRouter)
 router.use('/queue', queueRouter)
 router.use('/reports', reportsRouter)
 router.use('/auth', authRouter)
-router.use('/line', lineRouter)
+
+if (hasLineBotConfig()) {
+  const lineRouter = require('./line').default
+  router.use('/line', lineRouter)
+} else {
+  console.warn('LINE_CHANNEL_ACCESS_TOKEN or LINE_CHANNEL_SECRET not set. Skipping /line routes.')
+}
 
 export default router
