@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../lib/api'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -11,7 +11,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await axios.post('/api/v1/auth/login', { username, password })
+      const res = await api.post('/auth/login', { username, password })
       localStorage.setItem('token', res.data.token)
       navigate('/dashboard')
     } catch {
