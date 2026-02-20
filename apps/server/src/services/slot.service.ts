@@ -21,6 +21,25 @@ export const slotService = {
     })
   },
 
+  async findByDoctorAndRange(doctorId: string, startDate: Date, endDate: Date) {
+    const startOfDay = new Date(startDate)
+    startOfDay.setHours(0, 0, 0, 0)
+
+    const endOfDay = new Date(endDate)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    return prisma.timeSlot.findMany({
+      where: {
+        doctorId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    })
+  },
+
   async findById(id: string) {
     return prisma.timeSlot.findUnique({ where: { id }, include: { doctor: true } })
   },
