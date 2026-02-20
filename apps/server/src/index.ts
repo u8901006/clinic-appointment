@@ -4,6 +4,7 @@ import cors from 'cors'
 import fs from 'fs'
 import path from 'path'
 import routes from './routes'
+import { ensureBootstrapSchema } from './lib/db-bootstrap'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -50,8 +51,17 @@ if (webDist) {
   })
 }
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+async function startServer() {
+  await ensureBootstrapSchema()
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}
+
+startServer().catch((error) => {
+  console.error('Failed to initialize server schema', error)
+  process.exit(1)
 })
 
 export default app

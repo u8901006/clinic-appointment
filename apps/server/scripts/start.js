@@ -69,25 +69,6 @@ function runPrismaGenerateOnLinux() {
   runPrismaCommand(['prisma', 'generate', '--schema', schemaPath])
 }
 
-function runPrismaSchemaSyncOnLinux() {
-  if (process.platform === 'win32') {
-    return
-  }
-
-  ensureDatabaseUrl()
-
-  const schemaPath = path.resolve(__dirname, '../../../prisma/schema.prisma')
-  const migrationsDir = path.resolve(__dirname, '../../../prisma/migrations')
-  const hasMigrations = fs.existsSync(migrationsDir) && fs.readdirSync(migrationsDir).length > 0
-
-  if (hasMigrations) {
-    runPrismaCommand(['prisma', 'migrate', 'deploy', '--schema', schemaPath])
-    return
-  }
-
-  runPrismaCommand(['prisma', 'db', 'push', '--schema', schemaPath, '--skip-generate'])
-}
-
 function configurePrismaEngineLibrary() {
   const engineFileName = 'libquery_engine-linux-musl-openssl-3.0.x.so.node'
   const candidates = [
@@ -105,7 +86,6 @@ function configurePrismaEngineLibrary() {
 }
 
 runPrismaGenerateOnLinux()
-runPrismaSchemaSyncOnLinux()
 ensureDatabaseUrl()
 configurePrismaEngineLibrary()
 
