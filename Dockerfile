@@ -24,8 +24,8 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build server only
-RUN cd apps/server && npx tsc
+# Build server and web
+RUN cd apps/server && npx tsc && cd ../web && npm run build
 
 # Production image
 FROM node:20-alpine
@@ -35,6 +35,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat
 
 COPY --from=builder /app/apps/server/dist ./dist
+COPY --from=builder /app/apps/web/dist ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
