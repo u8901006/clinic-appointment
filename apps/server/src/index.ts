@@ -17,18 +17,36 @@ app.use(express.json({
 
 app.use('/api/v1', routes)
 
-const webDistDir = path.resolve(process.cwd(), 'public')
-const webEntryFile = path.join(webDistDir, 'index.html')
+function resolveWebDistDir() {
+  const candidates = [
+    path.resolve(process.cwd(), 'public'),
+    path.resolve(process.cwd(), 'apps/web/dist'),
+    path.resolve(process.cwd(), '../web/dist'),
+    path.resolve(__dirname, '../public'),
+    path.resolve(__dirname, '../../web/dist'),
+  ]
 
-if (fs.existsSync(webEntryFile)) {
-  app.use(express.static(webDistDir))
+  for (const candidate of candidates) {
+    const entryFile = path.join(candidate, 'index.html')
+    if (fs.existsSync(entryFile)) {
+      return { dir: candidate, entryFile }
+    }
+  }
+
+  return null
+}
+
+const webDist = resolveWebDistDir()
+
+if (webDist) {
+  app.use(express.static(webDist.dir))
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {
       next()
       return
     }
 
-    res.sendFile(webEntryFile)
+    res.sendFile(webDist.entryFile)
   })
 }
 

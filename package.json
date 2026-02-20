@@ -8,6 +8,8 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "start": "npm run start --workspace @clinic/server",
+    "preview": "npm run start --workspace @clinic/server",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
