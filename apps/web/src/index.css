@@ -1,10 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --app-bg: #eef8f8;
+  --app-panel: #f8fdfd;
+  --app-text: #0f3640;
+  --app-muted: #3f6a74;
+  --app-border: #c9dde1;
+  --app-sidebar: linear-gradient(170deg, #0f5a66 0%, #127b7a 48%, #0b5d47 100%);
+  --focus-ring: #0ea5b7;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  background:
+    radial-gradient(circle at 15% 15%, #d5eff0 0%, transparent 40%),
+    radial-gradient(circle at 80% 5%, #d7f4ea 0%, transparent 33%),
+    radial-gradient(circle at 50% 100%, #d8edf7 0%, transparent 40%),
+    var(--app-bg);
+  color: var(--app-text);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Lexend', 'Noto Sans TC', sans-serif;
+}
+
+@layer utilities {
+  .bg-app-surface {
+    background-color: var(--app-bg);
+  }
+
+  .bg-app-panel {
+    background-color: var(--app-panel);
+  }
+
+  .bg-app-sidebar {
+    background: var(--app-sidebar);
+  }
+
+  .text-app-text {
+    color: var(--app-text);
+  }
+
+  .text-app-muted {
+    color: var(--app-muted);
+  }
+
+  .border-app-border {
+    border-color: var(--app-border);
+  }
+
+  .shadow-soft {
+    box-shadow: 0 18px 38px rgba(16, 63, 73, 0.11);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
