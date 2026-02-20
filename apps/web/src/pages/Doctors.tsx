@@ -22,6 +22,7 @@ type WeekdayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | '
 type PeriodKey = 'morning' | 'afternoon' | 'evening'
 
 type ScheduleMatrix = Record<WeekdayKey, Record<PeriodKey, boolean>>
+type DoctorPresetKey = 'LEE' | 'WU' | 'WANG'
 
 const weekdayDefinitions: Array<{ key: WeekdayKey; label: string; offset: number }> = [
   { key: 'monday', label: '星期一', offset: 0 },
@@ -36,6 +37,12 @@ const periodDefinitions: Array<{ key: PeriodKey; label: string; startTime: strin
   { key: 'morning', label: '上午', startTime: '08:50', endTime: '11:45' },
   { key: 'afternoon', label: '下午', startTime: '13:50', endTime: '16:45' },
   { key: 'evening', label: '晚上', startTime: '17:50', endTime: '20:45' },
+]
+
+const doctorPresetNameMap: Array<{ key: DoctorPresetKey; matchers: string[] }> = [
+  { key: 'LEE', matchers: ['李政洋'] },
+  { key: 'WU', matchers: ['吳泓熹'] },
+  { key: 'WANG', matchers: ['王昭璿'] },
 ]
 
 function toApiDate(date: string) {
@@ -66,6 +73,72 @@ function createScheduleMatrix(defaultOpen: boolean): ScheduleMatrix {
     friday: { morning: defaultOpen, afternoon: defaultOpen, evening: defaultOpen },
     saturday: { morning: defaultOpen, afternoon: defaultOpen, evening: defaultOpen },
   }
+}
+
+function createPresetScheduleMatrix(presetKey: DoctorPresetKey): ScheduleMatrix {
+  const matrix = createScheduleMatrix(false)
+
+  switch (presetKey) {
+    case 'LEE': {
+      matrix.monday.morning = true
+      matrix.tuesday.morning = true
+      matrix.wednesday.morning = true
+      matrix.thursday.morning = true
+      matrix.friday.morning = true
+      matrix.saturday.morning = true
+      matrix.monday.evening = true
+      break
+    }
+    case 'WU': {
+      matrix.monday.afternoon = true
+      matrix.wednesday.afternoon = true
+      break
+    }
+    case 'WANG': {
+      matrix.tuesday.afternoon = true
+      matrix.tuesday.evening = true
+      matrix.thursday.afternoon = true
+      matrix.thursday.evening = true
+      matrix.friday.afternoon = true
+      matrix.friday.evening = true
+      break
+    }
+    default:
+      break
+  }
+
+  return matrix
+}
+
+function resolvePresetByDoctorName(name?: string): DoctorPresetKey | null {
+  if (!name) return null
+  const normalized = name.trim()
+
+  const matched = doctorPresetNameMap.find((preset) =>
+    preset.matchers.some((matcher) => normalized.includes(matcher))
+  )
+
+  return matched ? matched.key : null
+}
+
+function parseHolidayInput(input: string) {
+  const tokens = input
+    .split(/[\n,\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  const holidaySet = new Set<string>()
+  const invalidItems: string[] = []
+
+  for (const token of tokens) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(token)) {
+      holidaySet.add(token)
+    } else {
+      invalidItems.push(token)
+    }
+  }
+
+  return { holidaySet, invalidItems }
 }
 
 function getMonthBounds(monthInput: string) {
@@ -121,6 +194,7 @@ export default function Doctors() {
   const [planStartDate, setPlanStartDate] = useState(toMondayDateInput(toDateInputValue(new Date())))
   const [planWeeks, setPlanWeeks] = useState('4')
   const [planMaxPatients, setPlanMaxPatients] = useState('20')
+  const [holidayInput, setHolidayInput] = useState('')
   const [planMessage, setPlanMessage] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(() => toDateInputValue(new Date()).slice(0, 7))
 
@@ -212,6 +286,29 @@ export default function Doctors() {
 
   const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId)
 
+  const handleDoctorSelection = (doctorId: string) => {
+    setSelectedDoctorId(doctorId)
+    if (!doctorId) return
+
+    const doctor = doctors.find((item) => item.id === doctorId)
+    const presetKey = resolvePresetByDoctorName(doctor?.name)
+    if (presetKey) {
+      setScheduleMatrix(createPresetScheduleMatrix(presetKey))
+      setPlanMessage(`已自動套用 ${doctor?.name} 預設門診班表。`)
+    }
+  }
+
+  const applySelectedDoctorPreset = () => {
+    const presetKey = resolvePresetByDoctorName(selectedDoctor?.name)
+    if (!presetKey) {
+      setPlanMessage('此醫師尚無預設班表，請手動勾選門診時段。')
+      return
+    }
+
+    setScheduleMatrix(createPresetScheduleMatrix(presetKey))
+    setPlanMessage(`已套用 ${selectedDoctor?.name} 預設門診班表。`)
+  }
+
   const handleCreateSlot = (event: React.FormEvent) => {
     event.preventDefault()
     if (!selectedDoctorId) return
@@ -261,6 +358,13 @@ export default function Doctors() {
 
     const weekCount = Math.max(1, Math.min(12, Number(planWeeks) || 1))
     const maxPatients = Math.max(1, Number(planMaxPatients) || 20)
+    const { holidaySet, invalidItems } = parseHolidayInput(holidayInput)
+
+    if (invalidItems.length > 0) {
+      setPlanMessage(`假日格式錯誤：${invalidItems.slice(0, 3).join('、')}。請使用 YYYY-MM-DD。`)
+      return
+    }
+
     const normalizedMonday = toMondayDateInput(planStartDate)
     setPlanStartDate(normalizedMonday)
 
@@ -272,6 +376,10 @@ export default function Doctors() {
         const targetDate = new Date(startMonday)
         targetDate.setDate(startMonday.getDate() + weekIndex * 7 + weekday.offset)
         const targetDateString = toDateInputValue(targetDate)
+
+        if (holidaySet.has(targetDateString)) {
+          continue
+        }
 
         for (const period of periodDefinitions) {
           if (!scheduleMatrix[weekday.key][period.key]) continue
@@ -388,7 +496,7 @@ export default function Doctors() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => setSelectedDoctorId(doctor.id)}
+                          onClick={() => handleDoctorSelection(doctor.id)}
                           className="min-h-[44px] cursor-pointer rounded-lg border border-cyan-200 bg-cyan-50 px-3 text-sm font-semibold text-cyan-700 transition-colors hover:bg-cyan-100"
                         >
                           管理時段
@@ -417,7 +525,7 @@ export default function Doctors() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedDoctorId(doctor.id)}
+                  onClick={() => handleDoctorSelection(doctor.id)}
                   className="min-h-[44px] flex-1 cursor-pointer rounded-lg border border-cyan-200 bg-cyan-50 px-3 text-sm font-semibold text-cyan-700"
                 >
                   管理時段
@@ -445,7 +553,7 @@ export default function Doctors() {
             <select
               id="slot-doctor"
               value={selectedDoctorId}
-              onChange={(event) => setSelectedDoctorId(event.target.value)}
+              onChange={(event) => handleDoctorSelection(event.target.value)}
               className="min-h-[44px] w-full rounded-xl border border-app-border bg-white px-3 text-base text-app-text"
             >
               <option value="">請選擇醫師</option>
@@ -662,6 +770,13 @@ export default function Doctors() {
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={applySelectedDoctorPreset}
+            className="min-h-[44px] cursor-pointer rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+          >
+            套用醫師預設班表
+          </button>
+          <button
+            type="button"
             onClick={applyFullWeekTemplate}
             className="min-h-[44px] cursor-pointer rounded-xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-700 transition-colors hover:bg-cyan-100"
           >
@@ -752,6 +867,19 @@ export default function Doctors() {
               className="min-h-[44px] w-full rounded-xl border border-app-border bg-white px-3 text-base text-app-text"
             />
           </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="holiday-input" className="mb-1 block text-sm font-semibold text-app-text">台灣國定假日休診（可輸入多個日期）</label>
+          <textarea
+            id="holiday-input"
+            value={holidayInput}
+            onChange={(event) => setHolidayInput(event.target.value)}
+            rows={3}
+            placeholder="格式：YYYY-MM-DD，可用換行或逗號分隔，例如 2026-01-01, 2026-02-17"
+            className="w-full rounded-xl border border-app-border bg-white px-3 py-2 text-sm text-app-text"
+          />
+          <p className="mt-1 text-xs text-app-muted">系統會自動略過你輸入的假日日期，不建立該日門診時段。</p>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-app-border bg-app-panel px-4 py-3">
