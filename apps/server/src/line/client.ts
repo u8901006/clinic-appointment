@@ -4,14 +4,14 @@ let _lineClient: messagingApi.MessagingApiClient | null = null
 let _lineMiddleware: ReturnType<typeof middleware> | null = null
 
 function getConfig(): { channelAccessToken: string; channelSecret: string } {
-  const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
-  const channelSecret = process.env.LINE_CHANNEL_SECRET
+  const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim() || ''
+  const channelSecret = process.env.LINE_CHANNEL_SECRET?.trim() || ''
   
   if (!channelAccessToken || !channelSecret) {
     console.warn('LINE_CHANNEL_ACCESS_TOKEN or LINE_CHANNEL_SECRET not set. LINE Bot features will be disabled.')
   }
   
-  return { channelAccessToken: channelAccessToken || '', channelSecret: channelSecret || '' }
+  return { channelAccessToken, channelSecret }
 }
 
 export function getLineClient(): messagingApi.MessagingApiClient {

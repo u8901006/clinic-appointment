@@ -9,7 +9,7 @@ import reportsRouter from './reports'
 import authRouter from './auth'
 
 function hasLineBotConfig() {
-  return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN && process.env.LINE_CHANNEL_SECRET)
+  return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim() && process.env.LINE_CHANNEL_SECRET?.trim())
 }
 
 const router = Router()
