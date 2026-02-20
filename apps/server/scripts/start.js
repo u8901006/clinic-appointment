@@ -44,15 +44,8 @@ function ensureDatabaseUrl() {
   }
 }
 
-function runPrismaGenerateOnLinux() {
-  if (process.platform === 'win32') {
-    return
-  }
-
-  ensureDatabaseUrl()
-
-  const schemaPath = path.resolve(__dirname, '../../../prisma/schema.prisma')
-  const result = spawnSync('npx', ['prisma', 'generate', '--schema', schemaPath], {
+function runPrismaCommand(args) {
+  const result = spawnSync('npx', args, {
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -63,6 +56,36 @@ function runPrismaGenerateOnLinux() {
   if (result.status !== 0) {
     process.exit(result.status || 1)
   }
+}
+
+function runPrismaGenerateOnLinux() {
+  if (process.platform === 'win32') {
+    return
+  }
+
+  ensureDatabaseUrl()
+
+  const schemaPath = path.resolve(__dirname, '../../../prisma/schema.prisma')
+  runPrismaCommand(['prisma', 'generate', '--schema', schemaPath])
+}
+
+function runPrismaSchemaSyncOnLinux() {
+  if (process.platform === 'win32') {
+    return
+  }
+
+  ensureDatabaseUrl()
+
+  const schemaPath = path.resolve(__dirname, '../../../prisma/schema.prisma')
+  const migrationsDir = path.resolve(__dirname, '../../../prisma/migrations')
+  const hasMigrations = fs.existsSync(migrationsDir) && fs.readdirSync(migrationsDir).length > 0
+
+  if (hasMigrations) {
+    runPrismaCommand(['prisma', 'migrate', 'deploy', '--schema', schemaPath])
+    return
+  }
+
+  runPrismaCommand(['prisma', 'db', 'push', '--schema', schemaPath, '--skip-generate'])
 }
 
 function configurePrismaEngineLibrary() {
@@ -82,6 +105,7 @@ function configurePrismaEngineLibrary() {
 }
 
 runPrismaGenerateOnLinux()
+runPrismaSchemaSyncOnLinux()
 ensureDatabaseUrl()
 configurePrismaEngineLibrary()
 
